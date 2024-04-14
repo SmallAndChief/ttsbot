@@ -56,13 +56,14 @@ def help_message(message):
 
 @bot.message_handler(commands=['tts'])
 def help_message(message):
+    user_id = message.from_user.id
     chat_id = message.chat.id
     if is_limit_users():
         bot.send_message(chat_id=chat_id,
                          text="Достигнут лимит пользователей. Вы не сможете воспользоваться ботом.")
         logging.info("Достигнут лимит пользователей")
         return
-    if is_limit_messages():
+    if is_limit_messages(user_id=user_id):
         bot.send_message(chat_id=chat_id,
                          text="Достигнут лимит сообщений. Вы не сможете воспользоваться ботом.")
         logging.info("Достигнут лимит пользователей")
@@ -80,12 +81,14 @@ def tts(message, expires_at=expires_at, iam_token=iam_token):
         bot.send_message(user_id, 'Отправь текстовое сообщение')
         logging.warning(f'Неверный тип данных {user_id}')
         bot.register_next_step_handler(message, tts)
+        return
     text = message.text
-    if text > MAX_MESSAGE_SYMBOLS:
+    if len(text) > MAX_MESSAGE_SYMBOLS:
         bot.send_message(chat_id=chat_id,
                          text='Превышен лимит символов. Сократите текст и отправьте его снова!')
         logging.warning(f'Превышен лимит символов {user_id}')
         bot.register_next_step_handler(message, tts)
+        return
     if expires_at < time.time():
         token_data = create_iam_token()
         expires_at = time.time() + token_data['expires_in']
@@ -115,3 +118,6 @@ def text_message(message):
                      text='Я не понимаю чего вы хотите. Введите /help.',
                      reply_markup=markup)
     logging.info(f'Неизвестная команда от {message.from_user.id}')
+
+
+bot.infinity_polling()
